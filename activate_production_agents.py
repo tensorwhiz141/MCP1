@@ -17,8 +17,8 @@ def ensure_agent_registration():
     # Production agents that should be active
     production_agents = {
         "realtime_weather_agent": "agents/data/realtime_weather_agent.py",
-        "math_agent": "agents/specialized/math_agent.py", 
-        "calendar_agent": "agents/specialized/calendar_agent.py",
+        "math_agent": "agents/specialized/math_agent(2).py", 
+        "calendar_agent": "agents/specialized/calendar_agent(1).py",
         "real_gmail_agent": "agents/communication/real_gmail_agent.py",
         "document_processor": "agents/core/document_processor.py"
     }

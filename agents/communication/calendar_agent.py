@@ -32,21 +32,22 @@ class CalendarAgent(BaseMCPAgent):
         
         super().__init__("calendar_agent", "Calendar Agent", capabilities)
         
-        # In-memory storage for reminders (in production, use database)
+        """Initializing and storing the remainders and events in the database"""
         self.reminders = []
         self.events = []
         
-        # Calendar configuration
+        """Configuring the default the time zone for calendarAgent"""
         self.timezone = os.getenv('TIMEZONE', 'UTC')
-        
+        """Recognizing the calendar agent activation"""
         self.logger.info("Calendar Agent initialized")
     
     async def handle_process(self, message: MCPMessage) -> Dict[str, Any]:
         """Handle the main process method."""
         try:
+            
             params = message.params
             action = params.get("action", "")
-            
+            """Taking the actions according to the input by the user"""
             if action == "create_reminder":
                 return await self.handle_create_reminder(message)
             elif action == "schedule_event":
@@ -55,10 +56,12 @@ class CalendarAgent(BaseMCPAgent):
                 return await self.handle_check_events(message)
             else:
                 # Parse natural language request
+                
                 query = params.get("query", "") or params.get("text", "")
                 return await self.parse_calendar_request(query)
                 
         except Exception as e:
+            """Records any error/serious issue that might be present"""
             self.logger.error(f"Error in process: {e}")
             return {
                 "status": "error",
@@ -96,6 +99,7 @@ class CalendarAgent(BaseMCPAgent):
                 }
                 
         except Exception as e:
+            """"""
             self.logger.error(f"Error parsing calendar request: {e}")
             return {
                 "status": "error",

@@ -1,10 +1,10 @@
-import os
-import sys
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import Dict, Any, Type
-from datetime import datetime, timezone
-import uvicorn
+import os#Importing the OS
+import sys#Importing the sys
+from fastapi import FastAPI, HTTPException#importing the fastAPI
+from pydantic import BaseModel#importing the pydantic
+from typing import Dict, Any, Type#import the typing module
+from datetime import datetime, timezone#import datetime
+import uvicorn#importing the uvicorn module
 
 # Add project root to sys.path
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
@@ -62,4 +62,4 @@ def run_task(request: TaskRequest) -> Dict[str, Any]:
 
 # Run with uvicorn if executed directly
 if __name__ == "__main__":
-    uvicorn.run("data.api.mcp_adapter:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("data.api.mcp_adapter:app", host="127.0.0.1", port=8000, reload=True)   

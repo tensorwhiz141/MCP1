@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
 """
-BlackHole Core Live Data Agent
-Fetches real-time data with location-specific responses
+LiveDataAgent - Real-time weather info extractor
+Fetches weather data from wttr.in API for a given location.
 """
 
-import requests
-import re
-from datetime import datetime
-from bson import ObjectId
-from blackhole_core.data_source.mongodb import get_mongo_client
+import requests  # HTTP requests to external API
+import re  # For extracting locations via regex
+from datetime import datetime  # Timestamping responses
+from bson import ObjectId  # MongoDB ObjectId support
+from blackhole_core.data_source.mongodb import get_mongo_client  # MongoDB client
 
 class LiveDataAgent:
     def __init__(self, memory=None, api_url=None):
+        """Initialize LiveDataAgent with memory, API endpoint, and MongoDB."""
         self.memory = memory
-        self.base_api_url = "https://wttr.in"
+        self.base_api_url = "https://wttr.in"  # Base weather API URL
         self.client = get_mongo_client()
-        self.db = self.client["blackhole_db"]
+        self.db = self.client["blackhole_db"]  # Reference to database
 
-        # Location extraction patterns
+        # Location patterns to extract city names from queries
         self.location_patterns = [
             r'weather\s+(?:in|for|at)\s+([a-zA-Z\s]+)',
             r'temperature\s+(?:in|for|at)\s+([a-zA-Z\s]+)',
@@ -28,17 +29,18 @@ class LiveDataAgent:
         ]
 
     def plan(self, query):
+        """
+        🔍 Input: query containing city name
+        ⚙️ Processing: extract location and call wttr.in API
+        🧾 Output: full weather data and metadata
+        """
         try:
-            # Extract location from query
-            location = self._extract_location(query)
+            location = self._extract_location(query)  # 🔍 Extract location
+            api_url = f"{self.base_api_url}/{location}?format=j1"  # Build full URL
+            response = requests.get(api_url, timeout=10)  # Call API
+            data = response.json()  # Parse response JSON
 
-            # Build API URL with specific location
-            api_url = f"{self.base_api_url}/{location}?format=j1"
-
-            # Fetch weather data
-            response = requests.get(api_url, timeout=10)
-            data = response.json()
-
+            # 🧾 Construct result object
             result = {
                 "agent": "LiveDataAgent",
                 "input": query,
@@ -47,8 +49,8 @@ class LiveDataAgent:
                 "timestamp": datetime.now().isoformat(),
                 "metadata": {"api_url": api_url}
             }
-
         except Exception as e:
+            # If anything fails, return the error
             result = {
                 "agent": "LiveDataAgent",
                 "input": query,
@@ -62,15 +64,12 @@ class LiveDataAgent:
 
     def _extract_location(self, query):
         """
-        Extract location from user query.
-
-        Args:
-            query: User's query (dict or string)
+        Extract location from query using regex or fallback mappings.
 
         Returns:
-            Extracted location or default to London
+            city name (str)
         """
-        # Handle different query formats
+        # Normalize query
         if isinstance(query, dict):
             query_text = query.get('query', '') or query.get('document_text', '') or str(query)
         else:
@@ -78,107 +77,72 @@ class LiveDataAgent:
 
         query_lower = query_text.lower().strip()
 
-        # Try each pattern to extract location
+        # Apply regex patterns
         for pattern in self.location_patterns:
             match = re.search(pattern, query_lower)
             if match:
                 location = match.group(1).strip()
-                # Clean up the location
                 location = self._clean_location(location)
                 if location:
                     return location
 
-        # Fallback: look for common city names and handle misspellings
+        # Known cities and their corrections
         city_mappings = {
-            # Common misspellings and variations
-            'banglore': 'bangalore',
-            'bengaluru': 'bangalore',
-            'bombay': 'mumbai',
-            'calcutta': 'kolkata',
-            'madras': 'chennai',
-            'new delhi': 'delhi',
-            'ny': 'new york',
-            'nyc': 'new york',
-            'la': 'los angeles',
-            'sf': 'san francisco',
-            'london uk': 'london',
-            'paris france': 'paris',
+            'banglore': 'bangalore', 'bengaluru': 'bangalore', 'bombay': 'mumbai',
+            'calcutta': 'kolkata', 'madras': 'chennai', 'new delhi': 'delhi',
+            'ny': 'new york', 'nyc': 'new york', 'la': 'los angeles',
+            'sf': 'san francisco', 'london uk': 'london', 'paris france': 'paris',
             'tokyo japan': 'tokyo',
-
-            # Direct city names
-            'mumbai': 'mumbai',
-            'delhi': 'delhi',
-            'bangalore': 'bangalore',
-            'chennai': 'chennai',
-            'kolkata': 'kolkata',
-            'hyderabad': 'hyderabad',
-            'pune': 'pune',
-            'ahmedabad': 'ahmedabad',
-            'london': 'london',
-            'paris': 'paris',
-            'tokyo': 'tokyo',
-            'new york': 'new york',
-            'los angeles': 'los angeles',
-            'chicago': 'chicago',
-            'sydney': 'sydney',
-            'melbourne': 'melbourne',
-            'toronto': 'toronto',
-            'vancouver': 'vancouver',
-            'berlin': 'berlin',
-            'madrid': 'madrid'
+            'mumbai': 'mumbai', 'delhi': 'delhi', 'bangalore': 'bangalore',
+            'chennai': 'chennai', 'kolkata': 'kolkata', 'hyderabad': 'hyderabad',
+            'pune': 'pune', 'ahmedabad': 'ahmedabad', 'london': 'london',
+            'paris': 'paris', 'tokyo': 'tokyo', 'new york': 'new york',
+            'los angeles': 'los angeles', 'chicago': 'chicago', 'sydney': 'sydney',
+            'melbourne': 'melbourne', 'toronto': 'toronto', 'vancouver': 'vancouver',
+            'berlin': 'berlin', 'madrid': 'madrid'
         }
 
-        # Check for exact matches and misspellings
-        for variant, correct_city in city_mappings.items():
+        for variant, correct in city_mappings.items():
             if variant in query_lower:
-                return correct_city.title()
+                return correct.title()
 
-        # Fuzzy matching for close misspellings
-        for variant, correct_city in city_mappings.items():
+        for variant, correct in city_mappings.items():
             if self._is_similar_city(query_lower, variant):
-                return correct_city.title()
+                return correct.title()
 
-        # Default fallback
-        return "London"
+        return "London"  # Default fallback
 
     def _clean_location(self, location):
-        """Clean and validate location string."""
+        """
+        Remove stopwords and standardize city name capitalization.
+        """
         if not location:
             return None
 
-        # Remove common words that aren't part of location
         stop_words = ['the', 'a', 'an', 'is', 'are', 'was', 'were', 'weather', 'temperature', 'climate']
         words = location.split()
-        cleaned_words = [word for word in words if word.lower() not in stop_words]
-
-        if not cleaned_words:
+        cleaned = [w for w in words if w.lower() not in stop_words]
+        if not cleaned:
             return None
 
-        # Join and capitalize properly
-        cleaned_location = ' '.join(cleaned_words).title()
+        cleaned_location = ' '.join(cleaned).title()
 
-        # Handle special cases
         location_mappings = {
-            'Ny': 'New York',
-            'La': 'Los Angeles',
-            'Sf': 'San Francisco',
-            'Uk': 'London',
-            'Us': 'New York'
+            'Ny': 'New York', 'La': 'Los Angeles', 'Sf': 'San Francisco',
+            'Uk': 'London', 'Us': 'New York'
         }
 
         return location_mappings.get(cleaned_location, cleaned_location)
 
     def _is_similar_city(self, query_text: str, city_name: str) -> bool:
-        """Check if query contains a city name with minor misspellings."""
-        # Simple fuzzy matching for common misspellings
+        """
+        Basic fuzzy matcher for misspelled city names.
+        """
         if len(city_name) < 4:
             return False
-
-        # Check if most characters match (allowing 1-2 character differences)
         max_differences = 1 if len(city_name) <= 6 else 2
-        differences = 0
 
-        # Find the city name in the query
+        # Basic fuzzy check - here just direct substring match
         if city_name not in query_text:
             return False
 
