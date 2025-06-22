@@ -38,6 +38,8 @@ load_dotenv()
 # Add project paths
 sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent / "agents"))
+# self.logger.info(f"📦 Data to store in MongoDB: {result}")
+
 
 # Configure logging
 logging.basicConfig(
@@ -115,6 +117,7 @@ agent_discovery_task = None
 # Configuration
 AGENT_FOLDERS = {
     "live": Path("agents/live"),
+    "live1": Path("agents/live_data"),
     "inactive": Path("agents/inactive"),
     "future": Path("agents/future"),
     "templates": Path("agents/templates")
@@ -142,6 +145,7 @@ class ProductionAgentManager:
     async def discover_agents(self) -> Dict[str, List[str]]:
         """Discover agents in all folders with auto-loading."""
         discovered = {
+            "live1": [],
             "live": [],
             "inactive": [],
             "future": [],
@@ -685,13 +689,21 @@ async def process_command(request: MCPCommandRequest):
                     matching_agent = agent_manager.loaded_agents[aid]["instance"]
                     agent_id = aid
                     break
+        # elif any(word in command for word in ["weather", "temperature", "forecast", "climate"]):
+        #     # Weather-related commands
+        #     for aid in ["weather_agent"]:
+        #         if aid in agent_manager.loaded_agents:
+        #             matching_agent = agent_manager.loaded_agents[aid]["instance"]
+        #             agent_id = aid
+        #             break
         elif any(word in command for word in ["weather", "temperature", "forecast", "climate"]):
-            # Weather-related commands
-            for aid in ["weather_agent"]:
+        # Weather-related commands
+            for aid in ["weather_agent", "realtime_weather_agent", "live_weather_agent"]:
                 if aid in agent_manager.loaded_agents:
                     matching_agent = agent_manager.loaded_agents[aid]["instance"]
                     agent_id = aid
                     break
+
         elif any(word in command for word in ["analyze", "document", "text", "extract", "process"]):
             # Document-related commands
             for aid in ["document_agent"]:

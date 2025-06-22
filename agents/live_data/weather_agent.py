@@ -141,14 +141,24 @@
 
 # def create_agent():
 #     return RealTimeWeatherAgent()
+import sys
 import os
 import requests
+# from dotenv import load_dotenv
+from agents.base_agent import BaseMCPAgent
 from dotenv import load_dotenv
-from agents.base_agent import BaseAgent
 
-load_dotenv()
+# load_dotenv()
+dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
+print("📁 Looking for .env at:", dotenv_path)
 
-class WeatherAgent(BaseAgent):
+load_dotenv(dotenv_path=dotenv_path)
+
+api_key = os.getenv("OPENWEATHER_API_KEY")
+print("🔑 API Key loaded:", api_key)
+
+
+class WeatherAgent(BaseMCPAgent):
     def __init__(self):
         super().__init__()
         self.api_key = os.getenv("OPENWEATHER_API_KEY")

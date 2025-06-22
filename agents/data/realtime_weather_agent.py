@@ -39,7 +39,7 @@ class RealTimeWeatherAgent(BaseMCPAgent):
             )
         ]
 
-        super().__init__("realtime_weather_agent", "Real-Time Weather Agent", capabilities)
+        super().__init__("weather_agent", "Weather Agent", capabilities)
 
         # Initialize MongoDB integration
         self.mongodb_integration = None

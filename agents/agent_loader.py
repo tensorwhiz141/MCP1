@@ -8,7 +8,10 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 # Import agent discovery
-from . import discover_agents, load_all_agents, load_agent_from_info
+# from . import discover_agents, load_all_agents, load_agent_from_info
+
+from agents.discovery import discover_agents
+# from agents.loader_utils import load_agent_from_info  # <-- if needed
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
